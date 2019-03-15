@@ -3,13 +3,15 @@ package com.rdb.calendar;
 import android.graphics.Canvas;
 import android.graphics.RectF;
 
+import java.util.List;
+
 public interface CalendarPainter {
 
     void onYearDraw(Canvas canvas, RectF rectF, int year, boolean selected);
 
     void onMonthDraw(Canvas canvas, RectF rectF, int month, boolean selected);
 
-    RectF onHeadDraw(Canvas canvas, RectF rectF, long curMonth, CalendarSelectMode selectMode, long selectTime1, long selectTime2);
+    RectF onHeadDraw(Canvas canvas, RectF rectF, long curMonth, CalendarSelectMode selectMode, List<Long> selectTimes);
 
     void onWeekNameDraw(Canvas canvas, RectF rectF, String[] weekdays);
 

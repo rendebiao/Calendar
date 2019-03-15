@@ -8,6 +8,7 @@ import android.graphics.RectF;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 public class DefaultCalendarPainter implements CalendarPainter {
 
@@ -80,7 +81,7 @@ public class DefaultCalendarPainter implements CalendarPainter {
     }
 
     @Override
-    public RectF onHeadDraw(Canvas canvas, RectF rectF, long curMonth, CalendarSelectMode selectMode, long selectTime1, long selectTime2) {
+    public RectF onHeadDraw(Canvas canvas, RectF rectF, long curMonth, CalendarSelectMode selectMode, List<Long> selectTimes) {
         calendar.setTimeInMillis(curMonth);
         headTextPaint.setTextSize(headTextSize * scale);
         StringBuffer selectText = new StringBuffer();
@@ -89,22 +90,37 @@ public class DefaultCalendarPainter implements CalendarPainter {
         float baseline = (rectF.height() - fontMetrics.bottom + fontMetrics.top) / 2 - fontMetrics.top;
         float padding = rectF.width() / 21;
         if (selectMode == CalendarSelectMode.DAY) {
-            if (selectTime1 > 0) {
-                selectText.append("日：");
-                selectText.append(dayFormat.format(new Date(selectTime1)));
+            if (selectTimes.size() > 0) {
+                selectText.append("日 ");
+                selectText.append(dayFormat.format(new Date(selectTimes.get(0))));
             }
         } else if (selectMode == CalendarSelectMode.WEEK) {
-            if (selectTime1 > 0) {
-                selectText.append("周：");
-                selectText.append(dayFormat.format(new Date(selectTime1)) + "/" + dayFormat.format(new Date(selectTime2)));
+            if (selectTimes.size() > 0) {
+                selectText.append("周 ");
+                selectText.append(dayFormat.format(new Date(selectTimes.get(0))) + "/" + dayFormat.format(new Date(selectTimes.get(0))));
+            }
+        } else if (selectMode == CalendarSelectMode.DAYS) {
+            if (selectTimes.size() > 0) {
+                selectText.append("多日 ");
+                selectText.append(dayFormat.format(new Date(selectTimes.get(0))));
+                if (selectTimes.size() == 2) {
+                    selectText.append(" ");
+                    selectText.append(dayFormat.format(new Date(selectTimes.get(1))));
+                } else if (selectTimes.size() > 2) {
+                    selectText.append(" - ");
+                    selectText.append(dayFormat.format(new Date(selectTimes.get(selectTimes.size() - 1))));
+                    selectText.append(" 共");
+                    selectText.append(selectTimes.size());
+                    selectText.append("天");
+                }
             }
         } else if (selectMode == CalendarSelectMode.RANGE) {
-            if (selectTime1 > 0) {
-                selectText.append("范围：");
-                selectText.append(dayFormat.format(new Date(selectTime1)));
-                selectText.append("/");
-                if (selectTime2 > 0) {
-                    selectText.append(dayFormat.format(new Date(selectTime2)));
+            if (selectTimes.size() > 0) {
+                selectText.append("范围 ");
+                selectText.append(dayFormat.format(new Date(selectTimes.get(0))));
+                selectText.append(" - ");
+                if (selectTimes.size() > 1) {
+                    selectText.append(dayFormat.format(new Date(selectTimes.get(1))));
                 } else {
                     selectText.append("?");
                 }

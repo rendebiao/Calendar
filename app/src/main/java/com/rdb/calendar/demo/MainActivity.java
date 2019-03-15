@@ -40,9 +40,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             intent.putExtra("selectMode", CalendarSelectMode.RANGE);
             startActivity(intent);
         } else if (v.getId() == R.id.daysButton) {
-//            Intent intent = new Intent(this, CalendarActivity.class);
-//            intent.putExtra("selectMode",CalendarSelectMode.DAYS);
-//            startActivity(intent);
+            Intent intent = new Intent(this, CalendarActivity.class);
+            intent.putExtra("selectMode", CalendarSelectMode.DAYS);
+            startActivity(intent);
         }
     }
 }

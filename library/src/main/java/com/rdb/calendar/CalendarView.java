@@ -21,6 +21,7 @@ import android.widget.ViewAnimator;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 
 public class CalendarView extends ViewAnimator {
@@ -32,8 +33,6 @@ public class CalendarView extends ViewAnimator {
     private int weekLineColor = Color.TRANSPARENT;
     private int headLineColor = Color.TRANSPARENT;
     private long curDayTime;
-    private long firstSelectTime;
-    private long secondSelectTime;
     private Month curMonth;
     private Calendar calendar;
     private Paint linePaint = new Paint();
@@ -232,7 +231,7 @@ public class CalendarView extends ViewAnimator {
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             if (calendarPainter != null) {
-                clickRectF = calendarPainter.onHeadDraw(canvas, rectF, curMonth.monthTime, selectMode, firstSelectTime, secondSelectTime);
+                clickRectF = calendarPainter.onHeadDraw(canvas, rectF, curMonth.monthTime, selectMode, selectDayTime);
             }
             linePaint.setColor(headLineColor);
             canvas.drawLine(rectF.left, rectF.bottom - 1, rectF.right, rectF.bottom - 1, linePaint);
@@ -575,8 +574,9 @@ public class CalendarView extends ViewAnimator {
 
             public void onClick() {
                 if (weekEnable) {
-                    firstSelectTime = weekTime;
-                    secondSelectTime = weekTime + DateUtils.DAY_IN_MILLIS * 6;
+                    selectDayTime.clear();
+                    selectDayTime.add(weekTime);
+                    selectDayTime.add(weekTime + DateUtils.DAY_IN_MILLIS * 6);
                     dayGridAdapter.notifyDataSetChanged();
                     if (selectListener != null) {
                         selectListener.onWeekSelected(weekTime);
@@ -587,7 +587,7 @@ public class CalendarView extends ViewAnimator {
 
             public void draw(Canvas canvas, RectF rectF, boolean beforeDrawItem) {
                 CalendarWeekState weekState = weekEnable ? CalendarWeekState.ENABLE : CalendarWeekState.DISENABLE;
-                if (selectMode == CalendarSelectMode.WEEK && weekTime == firstSelectTime) {
+                if (selectMode == CalendarSelectMode.WEEK && selectDayTime.size() > 0 && weekTime == selectDayTime.get(0)) {
                     weekState = CalendarWeekState.SELECTED;
                 }
                 calendarPainter.onWeekDraw(canvas, weekTime, rectF, beforeDrawItem, weekState, dayGridView.isScroll());
@@ -615,7 +615,8 @@ public class CalendarView extends ViewAnimator {
             public void onClick() {
                 if (dayEnable) {
                     if (selectMode == CalendarSelectMode.DAY) {
-                        firstSelectTime = dayTime;
+                        selectDayTime.clear();
+                        selectDayTime.add(dayTime);
                         if (selectListener != null) {
                             selectListener.onDaySelected(dayTime);
                         }
@@ -625,14 +626,18 @@ public class CalendarView extends ViewAnimator {
                         if (selectDayTime.size() == 3) {
                             selectDayTime.remove(0);
                         }
-                        if (selectDayTime.size() == 1) {
-                            firstSelectTime = selectDayTime.get(0);
-                        } else if (selectDayTime.size() == 2) {
-                            firstSelectTime = Math.min(selectDayTime.get(0), selectDayTime.get(1));
-                            secondSelectTime = Math.max(selectDayTime.get(0), selectDayTime.get(1));
+                        if (selectDayTime.size() == 2) {
+                            Collections.sort(selectDayTime);
                             if (selectListener != null) {
-                                selectListener.onRangeSelected(firstSelectTime, secondSelectTime);
+                                selectListener.onRangeSelected(selectDayTime.get(0), selectDayTime.get(1));
                             }
+                        }
+                        headView.postInvalidate();
+                    } else if (selectMode == CalendarSelectMode.DAYS) {
+                        if (selectDayTime.contains(dayTime)) {
+                            selectDayTime.remove(dayTime);
+                        } else {
+                            selectDayTime.add(dayTime);
                         }
                         headView.postInvalidate();
                     }
@@ -646,15 +651,21 @@ public class CalendarView extends ViewAnimator {
                 CalendarDayState dayState = dayEnable ? CalendarDayState.ENABLE : CalendarDayState.DISENABLE;
                 if (selectMode != CalendarSelectMode.NONE) {
                     if (selectMode == CalendarSelectMode.WEEK) {
-                        if (firstSelectTime == dayTime) {
+                        if (selectDayTime.size() > 0 && selectDayTime.get(0) == dayTime) {
                             dayState = CalendarDayState.SELECTED_WEEK_START;
-                        } else if (secondSelectTime == dayTime) {
-                            dayState = CalendarDayState.SELECTED_WEEK_END;
-                        } else if (dayTime > firstSelectTime && dayTime < secondSelectTime) {
-                            dayState = CalendarDayState.SELECTED_WEEK_CENTER;
+                        } else if (selectDayTime.size() > 1) {
+                            if (selectDayTime.get(1).longValue() == dayTime) {
+                                dayState = CalendarDayState.SELECTED_WEEK_END;
+                            } else if (dayTime > selectDayTime.get(0) && dayTime < selectDayTime.get(1)) {
+                                dayState = CalendarDayState.SELECTED_WEEK_CENTER;
+                            }
                         }
                     } else if (selectMode == CalendarSelectMode.DAY) {
-                        if (firstSelectTime == dayTime) {
+                        if (selectDayTime.size() > 0 && selectDayTime.get(0) == dayTime) {
+                            dayState = CalendarDayState.SELECTED;
+                        }
+                    } else if (selectMode == CalendarSelectMode.DAYS) {
+                        if (selectDayTime.contains(dayTime)) {
                             dayState = CalendarDayState.SELECTED;
                         }
                     } else if (selectMode == CalendarSelectMode.RANGE) {
@@ -663,16 +674,16 @@ public class CalendarView extends ViewAnimator {
                                 dayState = CalendarDayState.SELECTED_RANGE_START;
                             }
                         } else if (selectDayTime.size() == 2) {
-                            if (firstSelectTime == secondSelectTime) {
-                                if (dayTime == firstSelectTime) {
+                            if (selectDayTime.get(0).equals(selectDayTime.get(1))) {
+                                if (dayTime == selectDayTime.get(0)) {
                                     dayState = CalendarDayState.SELECTED_RANGE_START_END;
                                 }
                             } else {
-                                if (firstSelectTime == dayTime) {
+                                if (selectDayTime.get(0) == dayTime) {
                                     dayState = CalendarDayState.SELECTED_RANGE_START;
-                                } else if (secondSelectTime == dayTime) {
+                                } else if (selectDayTime.get(1) == dayTime) {
                                     dayState = CalendarDayState.SELECTED_RANGE_END;
-                                } else if (dayTime > firstSelectTime && dayTime < secondSelectTime) {
+                                } else if (dayTime > selectDayTime.get(0) && dayTime < selectDayTime.get(1)) {
                                     dayState = CalendarDayState.SELECTED_RANGE_CENTER;
                                 }
                             }
