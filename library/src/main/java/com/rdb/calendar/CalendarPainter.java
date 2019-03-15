@@ -1,11 +1,8 @@
-package com.db.core.widget.calendar;
+package com.rdb.calendar;
 
 import android.graphics.Canvas;
 import android.graphics.RectF;
 
-/**
- * Created by DB on 2018/3/29.
- */
 public interface CalendarPainter {
 
     void onYearDraw(Canvas canvas, RectF rectF, int year, boolean selected);

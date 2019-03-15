@@ -1,4 +1,4 @@
-package com.db.core.widget.calendar;
+package com.rdb.calendar;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -183,11 +183,11 @@ public class CalendarView extends ViewAnimator {
         void onMonthShow(long time);
     }
 
-    class DrawView extends View implements View.OnClickListener {
+    class DrawView extends View implements OnClickListener {
 
+        protected RectF rectF = new RectF();
         private float touchX;
         private float touchY;
-        protected RectF rectF = new RectF();
 
         public DrawView(Context context, boolean click) {
             super(context);
@@ -220,7 +220,7 @@ public class CalendarView extends ViewAnimator {
 
     }
 
-    class HeadView extends DrawView implements View.OnClickListener {
+    class HeadView extends DrawView implements OnClickListener {
 
         RectF clickRectF;
 
@@ -733,9 +733,9 @@ public class CalendarView extends ViewAnimator {
         private final int count;
         private final int initPosition;
         private final long initTime;
-        private Calendar calendar;
         private final int startYear;
         private final int endYear;
+        private Calendar calendar;
         private SparseArray<Month> monthCache = new SparseArray<>();
 
         public DayGridAdapter(Calendar calendar, int years) {

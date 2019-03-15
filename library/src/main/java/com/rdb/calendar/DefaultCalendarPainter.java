@@ -1,4 +1,4 @@
-package com.db.core.widget.calendar;
+package com.rdb.calendar;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -9,13 +9,10 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-/**
- * Created by DB on 2018/3/29.
- */
 public class DefaultCalendarPainter implements CalendarPainter {
 
-    private Calendar calendar;
     private final static String[] MONTHS = {"一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"};
+    private Calendar calendar;
     private float scale = 1.0f;
     private int disenableDayColor;
     private int curMonthDayTextColor;

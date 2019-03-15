@@ -1,4 +1,4 @@
-package com.db.core.widget.calendar;
+package com.rdb.calendar;
 
 import android.content.Context;
 import android.graphics.PointF;
