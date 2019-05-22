@@ -113,6 +113,9 @@ public class CalendarView extends ViewAnimator {
 
     public void setSelectMode(@NonNull CalendarSelectMode selectMode) {
         this.selectMode = selectMode;
+        selectDayTime.clear();
+        headView.postInvalidate();
+        dayGridAdapter.notifyDataSetChanged();
     }
 
     public void setCalendarPainter(CalendarPainter calendarPainter) {
