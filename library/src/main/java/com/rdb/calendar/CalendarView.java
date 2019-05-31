@@ -35,6 +35,7 @@ public class CalendarView extends ViewAnimator {
     private long curDayTime;
     private Month curMonth;
     private Calendar calendar;
+    private long longClickTime;
     private Paint linePaint = new Paint();
     private String[] curWeeks = WEEKS.clone();
     private DayGridAdapter dayGridAdapter;
@@ -185,16 +186,19 @@ public class CalendarView extends ViewAnimator {
         void onMonthShow(long time);
     }
 
-    class DrawView extends View implements OnClickListener {
+    class DrawView extends View implements OnClickListener, OnLongClickListener {
 
         protected RectF rectF = new RectF();
         private float touchX;
         private float touchY;
 
-        public DrawView(Context context, boolean click) {
+        public DrawView(Context context, boolean click, boolean longClick) {
             super(context);
             if (click) {
                 setOnClickListener(this);
+            }
+            if (longClick) {
+                setOnLongClickListener(this);
             }
         }
 
@@ -216,10 +220,18 @@ public class CalendarView extends ViewAnimator {
             onClick(touchX, touchY);
         }
 
+        @Override
+        public final boolean onLongClick(View v) {
+            return onLongClick(touchX, touchY);
+        }
+
         protected void onClick(float x, float y) {
 
         }
 
+        protected boolean onLongClick(float x, float y) {
+            return false;
+        }
     }
 
     class HeadView extends DrawView implements OnClickListener {
@@ -227,7 +239,7 @@ public class CalendarView extends ViewAnimator {
         RectF clickRectF;
 
         public HeadView(Context context) {
-            super(context, true);
+            super(context, true, false);
         }
 
         @Override
@@ -252,7 +264,7 @@ public class CalendarView extends ViewAnimator {
     class WeekNameView extends DrawView {
 
         public WeekNameView(Context context) {
-            super(context, false);
+            super(context, false, false);
         }
 
         @Override
@@ -281,8 +293,8 @@ public class CalendarView extends ViewAnimator {
         protected int rowCount;
         private RowRectF[] rowRectFS;
 
-        public DrawGridView(Context context, int columnCount, int rowCount) {
-            super(context, true);
+        public DrawGridView(Context context, int columnCount, int rowCount, boolean longClick) {
+            super(context, true, longClick);
             this.columnCount = columnCount;
             this.rowCount = rowCount;
             rowRectFS = new RowRectF[rowCount];
@@ -350,11 +362,35 @@ public class CalendarView extends ViewAnimator {
             }
         }
 
+        @Override
+        protected boolean onLongClick(float x, float y) {
+            for (int row = 0; row < rowCount; row++) {
+                if (rowRectFS[row].contains(x, y)) {
+                    if (!onRowClick(row)) {
+                        for (int column = 0; column < columnCount; column++) {
+                            if (rowRectFS[row].itemRectFs[column].contains(x, y)) {
+                                int position = columnCount * row + column;
+                                if (onItemLongClick(row, column, position)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+            return false;
+        }
+
         protected boolean onRowClick(int row) {
             return false;
         }
 
         protected abstract void onItemClick(int row, int column, int position);
+
+        protected boolean onItemLongClick(int row, int column, int position) {
+            return false;
+        }
     }
 
     class YearGridView extends RecyclerView {
@@ -384,7 +420,7 @@ public class CalendarView extends ViewAnimator {
         private int startYear;
 
         public YearView(Context context) {
-            super(context, 4, 5);
+            super(context, 4, 5, false);
         }
 
         public void update(int startYear) {
@@ -409,7 +445,7 @@ public class CalendarView extends ViewAnimator {
     class MonthGridView extends DrawGridView {
 
         public MonthGridView(Context context) {
-            super(context, 3, 4);
+            super(context, 3, 4, false);
         }
 
         @Override
@@ -509,7 +545,7 @@ public class CalendarView extends ViewAnimator {
         private Week[] weekArray;
 
         public DayGroupView(Context context, int rowCount) {
-            super(context, 7, rowCount);
+            super(context, 7, rowCount, true);
             weekArray = new Week[rowCount];
         }
 
@@ -550,6 +586,12 @@ public class CalendarView extends ViewAnimator {
         protected void onItemClick(int row, int column, int position) {
             Day day = weekArray[row].dayArray[column];
             day.onClick();
+        }
+
+        @Override
+        protected boolean onItemLongClick(int row, int column, int position) {
+            Day day = weekArray[row].dayArray[column];
+            return day.onLongClick();
         }
 
         class Week {
@@ -637,7 +679,16 @@ public class CalendarView extends ViewAnimator {
                         }
                         headView.postInvalidate();
                     } else if (selectMode == CalendarSelectMode.DAYS) {
-                        if (selectDayTime.contains(dayTime)) {
+                        if (longClickTime > 0) {
+                            long minTime = Math.min(longClickTime, dayTime);
+                            long maxTime = Math.max(longClickTime, dayTime);
+                            for (long l = minTime; l <= maxTime; l += DateUtils.DAY_IN_MILLIS) {
+                                selectDayTime.remove(l);
+                                selectDayTime.add(l);
+                            }
+                            longClickTime = 0;
+                            headView.postInvalidate();
+                        } else if (selectDayTime.contains(dayTime)) {
                             selectDayTime.remove(dayTime);
                         } else {
                             selectDayTime.add(dayTime);
@@ -646,6 +697,19 @@ public class CalendarView extends ViewAnimator {
                     }
                     dayGridAdapter.notifyDataSetChanged();
                 }
+            }
+
+            public boolean onLongClick() {
+                if (dayEnable) {
+                    if (selectMode == CalendarSelectMode.DAYS) {
+                        if (longClickTime == 0) {
+                            longClickTime = dayTime;
+                            dayGridAdapter.notifyDataSetChanged();
+                            return true;
+                        }
+                    }
+                }
+                return false;
             }
 
             public void draw(Canvas canvas, RectF rectF) {
@@ -668,7 +732,7 @@ public class CalendarView extends ViewAnimator {
                             dayState = CalendarDayState.SELECTED;
                         }
                     } else if (selectMode == CalendarSelectMode.DAYS) {
-                        if (selectDayTime.contains(dayTime)) {
+                        if (selectDayTime.contains(dayTime) || longClickTime == dayTime) {
                             dayState = CalendarDayState.SELECTED;
                         }
                     } else if (selectMode == CalendarSelectMode.RANGE) {
